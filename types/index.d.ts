@@ -26,6 +26,7 @@ declare module 'dayjs' {
     subtractBusinessMinutes(numberOfMinutes: number): Dayjs;
     subtractBusinessHours(numberOfHours: number): Dayjs,
     subtractBusinessTime(timeToSubtract: number, businessUnit: BusinessUnitType): Dayjs,
+    businessSecondsDiff(comparator: Dayjs): number
     businessMinutesDiff(comparator: Dayjs): number
     businessHoursDiff(comparator: Dayjs): number
     businessDaysDiff(comparator: Dayjs): number

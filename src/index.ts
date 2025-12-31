@@ -351,6 +351,70 @@ const businessTime = (
     return diff ? diff * multiplier : 0;
   }
 
+  function businessSecondsDiff(comparator: Dayjs): number {
+    let { from, to, multiplier } = fixDatesToCalculateDiff(this, comparator);
+    let diff = 0;
+
+    const isSameDayfromTo = from.isSame(to, 'day');
+    if (isSameDayfromTo) {
+      const fromSegments = getBusinessTimeSegments(from);
+      for (const segment of fromSegments) {
+        const { start, end } = segment;
+
+        if (
+          to.isSameOrAfter(start) &&
+          to.isSameOrBefore(end) &&
+          from.isSameOrAfter(start) &&
+          from.isSameOrBefore(end)
+        ) {
+          diff += to.diff(from, 'seconds');
+          break;
+        } else if (to.isSameOrAfter(start) && to.isSameOrBefore(end)) {
+          diff += to.diff(start, 'seconds');
+          break;
+        } else if (from.isSameOrAfter(start) && from.isSameOrBefore(end)) {
+          diff += end.diff(from, 'seconds');
+        }
+      }
+
+      return diff ? diff * multiplier : 0;
+    }
+
+    let segments = getBusinessTimeSegments(from);
+    for (const segment of segments) {
+      const { start, end } = segment;
+
+      if (from.isSameOrAfter(start) && from.isSameOrBefore(end)) {
+        diff += end.diff(from, 'seconds');
+      } else if (start.isSameOrAfter(from)) {
+        diff += end.diff(start, 'seconds');
+      }
+    }
+
+    from = from.addBusinessDays(1);
+    while (from.isBefore(to, 'day')) {
+      segments = getBusinessTimeSegments(from);
+      for (const segment of segments) {
+        const { start, end } = segment;
+        diff += end.diff(start, 'seconds');
+      }
+
+      from = from.addBusinessDays(1);
+    }
+
+    const toSegments = getBusinessTimeSegments(to);
+    for (const segment of toSegments) {
+      const { start, end } = segment;
+      if (to.isSameOrAfter(start) && to.isSameOrBefore(end)) {
+        diff += to.diff(start, 'seconds');
+      } else if (end.isSameOrBefore(to)) {
+        diff += end.diff(start, 'seconds');
+      }
+    }
+
+    return diff ? diff * multiplier : 0;
+  }
+
   function businessMinutesDiff(comparator: Dayjs): number {
     let { from, to, multiplier } = fixDatesToCalculateDiff(this, comparator);
     let diff = 0;
@@ -459,6 +523,7 @@ const businessTime = (
   DayjsClass.prototype.subtractBusinessHours = subtractBusinessHours;
   DayjsClass.prototype.subtractBusinessTime = subtractBusinessTime;
   DayjsClass.prototype.businessMinutesDiff = businessMinutesDiff;
+  DayjsClass.prototype.businessSecondsDiff = businessSecondsDiff;
   DayjsClass.prototype.businessHoursDiff = businessHoursDiff;
   DayjsClass.prototype.businessDaysDiff = businessDaysDiff;
   DayjsClass.prototype.businessTimeDiff = businessTimeDiff;
