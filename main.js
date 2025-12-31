@@ -12,11 +12,15 @@ dayjs.setBusinessTime({
   friday: [{ start: '08:00:00', end: '18:00:00' }],
   saturday: null,
 });
+// const oldHolidays =  ['2025-12-25']
+const holidays = {
+  '2025-12-25': [{ start: '12:00:00', end: '18:00:00' }, { start: '09:00:00', end: '10:00:00' }, { start: '02:00:00', end: '08:30:00' }],
+}
+dayjs.setHolidays(holidays);
 
-dayjs.setHolidays(['2025-12-25']);
-
-const inicio = dayjs('2025-12-01 20:00:00');
-const fim = dayjs('2025-12-02 11:01:01');
+const inicio = dayjs('2025-12-24 20:00:00');
+const fim = dayjs('2025-12-25 11:00:00');
+const outputExpectedInSeconds = 5400;
 
 const diffMinutosUteis = inicio.businessMinutesDiff(fim);
 const diffHorasUteis = inicio.businessHoursDiff(fim);

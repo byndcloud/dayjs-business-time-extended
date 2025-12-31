@@ -50,7 +50,7 @@ const businessTime = (
     dayjsFactory.updateLocale(dayjs().locale(), { ...newData });
   }
 
-  function getHolidays(): string[] {
+  function getHolidays() {
     return getLocale().holidays || [];
   }
 
@@ -66,19 +66,154 @@ const businessTime = (
     updateLocale({ businessHours });
   }
 
+  function isFullHoliday(date: Dayjs) {
+    const holidays = getHolidays();
+    const key = date.format('YYYY-MM-DD');
+
+    if (Array.isArray(holidays)) {
+      return holidays.includes(key);
+    }
+
+    if (holidays && typeof holidays === 'object') {
+      if (Object.prototype.hasOwnProperty.call(holidays, key)) {
+        return holidays[key] === null;
+      }
+    }
+
+    return false;
+  }
+
+  function getHolidayExcludedHours(date: Dayjs): any {
+    const holidays = getHolidays();
+    const key = date.format('YYYY-MM-DD');
+
+    if (Array.isArray(holidays)) {
+      return holidays.includes(key) ? null : undefined;
+    }
+
+    if (holidays && typeof holidays === 'object') {
+      if (Object.prototype.hasOwnProperty.call(holidays, key)) {
+        return holidays[key];
+      }
+    }
+
+    return undefined;
+  }
+
+  function buildSegmentsFromHours(
+    date: Dayjs,
+    hours: any,
+  ): BusinessTimeSegment[] {
+    if (!hours) {
+      return null;
+    }
+
+    return hours.reduce((segments, businessTime) => {
+      let { start, end } = businessTime;
+      start = timeStringToDayJS(start, date);
+      end = timeStringToDayJS(end, date);
+      segments.push({ start, end });
+      return segments;
+    }, []);
+  }
+
+  function subtractSegments(
+    baseSegments: BusinessTimeSegment[],
+    excludedSegments: BusinessTimeSegment[],
+  ): BusinessTimeSegment[] {
+    if (!excludedSegments?.length) {
+      return baseSegments;
+    }
+
+    let result: BusinessTimeSegment[] = baseSegments;
+
+    for (const excluded of excludedSegments) {
+      const next: BusinessTimeSegment[] = [];
+      for (const base of result) {
+        const baseStart = base.start;
+        const baseEnd = base.end;
+
+        const exStart = excluded.start;
+        const exEnd = excluded.end;
+
+        const hasOverlap = exStart.isBefore(baseEnd) && exEnd.isAfter(baseStart);
+        if (!hasOverlap) {
+          next.push(base);
+          continue;
+        }
+
+        if (exStart.isSameOrBefore(baseStart) && exEnd.isSameOrAfter(baseEnd)) {
+          continue;
+        }
+
+        if (exStart.isAfter(baseStart)) {
+          const leftEnd = exStart.isBefore(baseEnd) ? exStart : baseEnd;
+          if (leftEnd.isAfter(baseStart)) {
+            next.push({ start: baseStart, end: leftEnd });
+          }
+        }
+
+        if (exEnd.isBefore(baseEnd)) {
+          const rightStart = exEnd.isAfter(baseStart) ? exEnd : baseStart;
+          if (baseEnd.isAfter(rightStart)) {
+            next.push({ start: rightStart, end: baseEnd });
+          }
+        }
+      }
+
+      result = next;
+      if (!result.length) {
+        return null;
+      }
+    }
+
+    return result.length ? result : null;
+  }
+
+  function getEffectiveBusinessTimeSegments(day: Dayjs): BusinessTimeSegment[] {
+    const date = day.clone();
+
+    if (isFullHoliday(date)) {
+      return null;
+    }
+
+    const dayName = DaysNames[date.day()];
+    const businessHours = getBusinessTime()[dayName];
+    const baseSegments = buildSegmentsFromHours(date, businessHours);
+    if (!baseSegments?.length) {
+      return null;
+    }
+
+    const excludedHours = getHolidayExcludedHours(date);
+    if (excludedHours === undefined) {
+      return baseSegments;
+    }
+
+    if (excludedHours === null) {
+      return null;
+    }
+
+    const excludedSegments = buildSegmentsFromHours(date, excludedHours);
+    return subtractSegments(baseSegments, excludedSegments);
+  }
+
   function isHoliday() {
     const today = this.format('YYYY-MM-DD');
     const holidays = getHolidays();
 
-    return holidays.includes(today);
+    if (Array.isArray(holidays)) {
+      return holidays.includes(today);
+    }
+
+    if (holidays && typeof holidays === 'object') {
+      return Object.prototype.hasOwnProperty.call(holidays, today);
+    }
+
+    return false;
   }
 
   function isBusinessDay() {
-    const businessHours = getBusinessTime();
-    const dayName = DaysNames[this.day()];
-    const isDefaultWorkingDay = !!businessHours[dayName];
-
-    return isDefaultWorkingDay && !this.isHoliday();
+    return !!getEffectiveBusinessTimeSegments(this)?.length;
   }
 
   function addOrsubtractBusinessDays(
@@ -128,22 +263,7 @@ const businessTime = (
   }
 
   function getBusinessTimeSegments(day: Dayjs): BusinessTimeSegment[] {
-    if (!day.isBusinessDay()) {
-      return null;
-    }
-    let date = day.clone();
-
-    const dayName = DaysNames[date.day()];
-
-    const businessHours = getBusinessTime()[dayName];
-
-    return businessHours.reduce((segments, businessTime, index) => {
-      let { start, end } = businessTime;
-      start = timeStringToDayJS(start, date);
-      end = timeStringToDayJS(end, date);
-      segments.push({ start, end });
-      return segments;
-    }, []);
+    return getEffectiveBusinessTimeSegments(day);
   }
 
   function getCurrentBusinessTimeSegment(date) {

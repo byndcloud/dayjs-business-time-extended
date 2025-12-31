@@ -4,8 +4,11 @@ declare const plugin: PluginFunc
 export = plugin
 
 declare module 'dayjs' {
-  export function getHolidays(): string[];
-  export function setHolidays(holidays: string[]): void;
+  export type HolidaysMap = Record<string, BusinessHours[] | null>;
+  export type Holidays = string[] | HolidaysMap;
+
+  export function getHolidays(): Holidays;
+  export function setHolidays(holidays: Holidays): void;
   export function getBusinessTime(): BusinessHoursMap;
   export function setBusinessTime(businessHours: BusinessHoursMap): void;
 
@@ -53,7 +56,7 @@ declare module 'dayjs' {
   }
 
   export interface ILocale {
-    holidays: string[],
+    holidays: Holidays,
     businessHours: BusinessHoursMap,
   }
 }
