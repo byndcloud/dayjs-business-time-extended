@@ -2,6 +2,27 @@
 
 A [Day.js](https://github.com/iamkun/dayjs) plugin that allows you to work with Business Time.
 
+## Fork
+
+This repository is a fork of:
+
+- https://github.com/rankmyapp/dayjs-business-time
+
+Original package on npm:
+
+- https://www.npmjs.com/package/dayjs-business-time
+
+## Roadmap
+
+- [x] Calculate the difference in seconds between dates considering business days
+- [x] Allow configuring time ranges for business days
+- [x] Fix bug when calculating the next business time
+- [x] Fix bug when calculating the last business time
+- [x] Prevent crashes when setting an invalid time range (start > end)
+- [ ] Implement addBusinessSeconds and subtractBusinessSeconds
+- [ ] Consider timezone
+- [ ] Allow configuring business hours on non-business days (special service shifts).
+
 * Business Days
 * Business Hours
 * Business Minutes
@@ -42,6 +63,7 @@ A [Day.js](https://github.com/iamkun/dayjs) plugin that allows you to work with 
   * [Business Days Diff](#business-days-diff)
   * [Business Hours Diff](#business-hours-diff)
   * [Business Minutes Diff](#business-minutes-diff)
+  * [Business Seconds Diff](#business-seconds-diff)
  
 ## Instalation
 
@@ -359,5 +381,46 @@ const end: Dayjs = dayjs('2021-02-01 10:45:00');
 
 const difference: number = start.businessMinutesDiff(end);
 
-console.log(difference); // 25
+console.log(difference); // 45
+````
+
+### Business Seconds Diff
+
+This method calculates the difference in seconds between two dates considering only business time.
+
+````typescript
+const start: Dayjs = dayjs('2025-12-01 20:00:00');
+const end: Dayjs = dayjs('2025-12-02 11:01:01');
+
+const difference: number = start.businessSecondsDiff(end);
+
+console.log(difference);
+````
+
+You can also use the new holidays format (object map) to define time ranges that should NOT be counted as business time on a given date:
+
+````typescript
+dayjs.setBusinessTime({
+  sunday: null,
+  monday: [{ start: '08:00:00', end: '18:00:00' }],
+  tuesday: [{ start: '08:00:00', end: '18:00:00' }],
+  wednesday: [{ start: '08:00:00', end: '18:00:00' }],
+  thursday: [{ start: '08:00:00', end: '18:00:00' }],
+  friday: [{ start: '08:00:00', end: '18:00:00' }],
+  saturday: null,
+});
+
+dayjs.setHolidays({
+  '2025-12-25': [
+    { start: '12:00:00', end: '18:00:00' },
+    { start: '09:00:00', end: '10:00:00' },
+    { start: '02:00:00', end: '08:30:00' },
+  ],
+});
+
+const inicio = dayjs('2025-12-24 20:00:00');
+const fim = dayjs('2025-12-25 11:00:00');
+
+const seconds = inicio.businessSecondsDiff(fim);
+console.log(seconds); // 5400
 ````
