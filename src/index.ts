@@ -55,7 +55,31 @@ const businessTime = (
   }
 
   function setHolidays(holidays) {
+    validateHolidays(holidays);
     updateLocale({ holidays });
+  }
+
+  function validateHolidays(holidays: any) {
+    if (holidays == null) {
+      return;
+    }
+
+    if (Array.isArray(holidays)) {
+      return;
+    }
+
+    if (typeof holidays !== 'object') {
+      throw new Error('Invalid holidays: expected array or object');
+    }
+
+    Object.keys(holidays).forEach((dateKey) => {
+      const value = holidays[dateKey];
+      if (value === null) {
+        return;
+      }
+
+      validateBusinessHoursArray(value, `holidays.${dateKey}`);
+    });
   }
 
   function getBusinessTime(): BusinessHoursMap {
@@ -63,7 +87,47 @@ const businessTime = (
   }
 
   function setBusinessTime(businessHours: BusinessHoursMap) {
+    validateBusinessHoursMap(businessHours, 'businessHours');
     updateLocale({ businessHours });
+  }
+
+  function validateTimeRange(timeRange: { start: string; end: string }, path: string) {
+    const start = timeStringToDayJS(timeRange.start);
+    const end = timeStringToDayJS(timeRange.end);
+
+    if (start.isAfter(end)) {
+      throw new Error(
+        `Invalid time range at ${path}: start (${timeRange.start}) must be before or equal to end (${timeRange.end})`,
+      );
+    }
+  }
+
+  function validateBusinessHoursArray(hours: any, path: string) {
+    if (hours == null) {
+      return;
+    }
+
+    if (!Array.isArray(hours)) {
+      throw new Error(`Invalid business hours at ${path}: expected array or null`);
+    }
+
+    hours.forEach((range, index) => {
+      if (!range || typeof range !== 'object') {
+        throw new Error(`Invalid business hours at ${path}[${index}]: expected object`);
+      }
+
+      validateTimeRange(range, `${path}[${index}]`);
+    });
+  }
+
+  function validateBusinessHoursMap(map: any, path: string) {
+    if (!map || typeof map !== 'object') {
+      throw new Error(`Invalid business hours at ${path}: expected object`);
+    }
+
+    Object.keys(map).forEach((dayKey) => {
+      validateBusinessHoursArray(map[dayKey], `${path}.${dayKey}`);
+    });
   }
 
   function isFullHoliday(date: Dayjs) {
