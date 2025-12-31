@@ -23,6 +23,7 @@
   },
   "scripts": {
     "test": "jest",
+    "start": "node -r ts-node/register main.js",
     "test:watch": "jest --watch",
     "build": "rm -rf dist && tsc",
     "prepublishOnly": "yarn build"
