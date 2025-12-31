@@ -108,13 +108,16 @@ const businessTime = (
       return null;
     }
 
-    return hours.reduce((segments, businessTime) => {
+    const segments = hours.reduce((acc, businessTime) => {
       let { start, end } = businessTime;
       start = timeStringToDayJS(start, date);
       end = timeStringToDayJS(end, date);
-      segments.push({ start, end });
-      return segments;
+      acc.push({ start, end });
+      return acc;
     }, []);
+
+    segments.sort((a, b) => a.start.valueOf() - b.start.valueOf());
+    return segments;
   }
 
   function subtractSegments(
