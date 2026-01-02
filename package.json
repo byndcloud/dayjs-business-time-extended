@@ -26,7 +26,10 @@
     "start": "node -r ts-node/register main.js",
     "test:watch": "jest --watch",
     "build": "rm -rf dist && tsc",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn build",
+    "docker:build": "docker build -t node-utc-test .",
+    "docker:run": "docker run --rm node-utc-test",
+    "docker:test": "npm run docker:build && npm run docker:run"
   },
   "dependencies": {
     "dayjs": "^1.10.4"
