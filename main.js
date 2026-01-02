@@ -1,15 +1,12 @@
 const dayjs = require('dayjs');
-const utc = require('dayjs/plugin/utc');
-const timezone = require('dayjs/plugin/timezone');
 const businessTime = require('./src/index.ts');
 
-// Estender dayjs com os plugins necessários
-dayjs.extend(utc);
-dayjs.extend(timezone);
+// Estender dayjs com businessTime (utc e timezone são incluídos automaticamente)
 dayjs.extend(businessTime);
 
 // Definir o timezone padrão como America/Sao_Paulo (UTC-3)
 const TIMEZONE = 'America/Sao_Paulo';
+dayjs.setTZBusinessTime(TIMEZONE);
 
 // Script de teste para verificar o fuso horário
 console.log('=== Teste de Data e Fuso Horário ===\n');
@@ -59,16 +56,14 @@ const holidays = {
 }
 dayjs.setHolidays(holidays);
 
-// Criar datas com o timezone específico (UTC-3)
-// const inicio = dayjs.tz('2026-01-02 08:00s:00', TIMEZONE);
-const inicio = dayjs.tz('2026-01-02T08:00:00.000Z', TIMEZONE);
+// Criar datas - agora o ensureTimezone fará a conversão automática
+// Você pode usar qualquer formato: string, Date, ou Dayjs
+const inicio = dayjs('2026-01-02 08:00:00');
+const fim = dayjs(new Date());
 
-
-
-// const fim = dayjs.tz('2026-01-02T17:00:00.000Z', TIMEZONE); // ERRADO, pois o fuso horário não é o UTC-3
-const fim = dayjs.tz(new Date('2026-01-02T17:00:00.000Z'), TIMEZONE); // CERTO, pois o fuso horário é o UTC-3
-// const fim = dayjs.tz(new Date()); // ERRADO, pois o fuso horário não é o UTC-3
-// const fim = dayjs.tz(new Date(), TIMEZONE); // CERTO, pois o fuso horário é o UTC-3
+// Ou se preferir usar formatos ISO:
+// const inicio = dayjs('2026-01-02T08:00:00.000Z');
+// const fim = dayjs(new Date('2026-01-02T17:00:00.000Z'));
 
 // const expectedNextBusinessTime = '2025-12-25 08:00:00';
 // const nextBusinessTime = inicio.nextBusinessTime();
@@ -82,8 +77,10 @@ const diffMinutosUteis = inicio.businessMinutesDiff(fim);
 const diffHorasUteis = inicio.businessHoursDiff(fim);
 const diffSegundosUteis = inicio.businessSecondsDiff(fim);
 
-console.log('Início:', inicio.format('YYYY-MM-DD HH:mm:ss'));
-console.log('Fim:', fim.format('YYYY-MM-DD HH:mm:ss'));
-console.log('Minutos úteis (diff):', diffMinutosUteis, ' -> ', diffMinutosUteis * 60);
-console.log('Horas úteis (diff):', diffHorasUteis, ' -> ', diffHorasUteis * 60 * 60);
+console.log('Início (timezone do sistema):', inicio.format('YYYY-MM-DD HH:mm:ss'));
+console.log('Fim (timezone do sistema):', fim.format('YYYY-MM-DD HH:mm:ss'));
+console.log('\nOBS: Os objetos acima são exibidos no timezone do sistema.');
+console.log('Porém, as funções de diff convertem automaticamente para', TIMEZONE, 'antes de calcular.\n');
+console.log('Minutos úteis (diff):', diffMinutosUteis, ' -> ', diffMinutosUteis * 60, 'segundos');
+console.log('Horas úteis (diff):', diffHorasUteis, ' -> ', diffHorasUteis * 60 * 60, 'segundos');
 console.log('Segundos úteis (diff):', diffSegundosUteis);

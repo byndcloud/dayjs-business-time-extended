@@ -11,6 +11,8 @@ declare module 'dayjs' {
   export function setHolidays(holidays: Holidays): void;
   export function getBusinessTime(): BusinessHoursMap;
   export function setBusinessTime(businessHours: BusinessHoursMap): void;
+  export function setTZBusinessTime(timeZone: string): void;
+  export function getTZBusinessTime(): string | null;
 
   export type BusinessUnitType = 'minute' | 'minutes' | 'hour' | 'hours' | 'day' | 'days';
   export interface Dayjs {

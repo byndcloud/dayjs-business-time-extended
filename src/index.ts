@@ -2,6 +2,8 @@ import UpdateLocale from 'dayjs/plugin/updateLocale';
 import LocaleData from 'dayjs/plugin/localeData';
 import IsSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import IsSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import dayjs, {
   BusinessHoursMap,
   BusinessTimeSegment,
@@ -38,6 +40,11 @@ const businessTime = (
   dayjsFactory.extend(UpdateLocale);
   dayjsFactory.extend(IsSameOrBefore);
   dayjsFactory.extend(IsSameOrAfter);
+  dayjsFactory.extend(utc);
+  dayjsFactory.extend(timezone);
+
+  // Variável para armazenar o timezone configurado
+  let configuredTimezone: string | null = null;
 
   setBusinessTime(DEFAULT_WORKING_HOURS);
   setHolidays([]);
@@ -84,6 +91,65 @@ const businessTime = (
 
   function getBusinessTime(): BusinessHoursMap {
     return getLocale().businessHours;
+  }
+
+  function setTZBusinessTime(timeZone: string) {
+    configuredTimezone = timeZone;
+  }
+
+  function getTZBusinessTime(): string | null {
+    return configuredTimezone;
+  }
+
+  /**
+   * Garante que a data esteja no timezone correto.
+   * Se um timezone foi configurado via setTZBusinessTime, converte a data para esse timezone.
+   * Suporta vários formatos de entrada: Dayjs, Date, strings ISO, etc.
+   */
+  function ensureTimezone(input: any): Dayjs {
+    // Se não há timezone configurado, retorna a entrada convertida para Dayjs
+    if (!configuredTimezone) {
+      if (dayjs.isDayjs(input)) {
+        return input;
+      }
+      return dayjsFactory(input);
+    }
+
+    // Se a entrada já é um Dayjs
+    if (dayjs.isDayjs(input)) {
+      // Verifica se já está no timezone correto
+      const inputTz = (input as any).$x?.$timezone;
+      if (inputTz === configuredTimezone) {
+        return input;
+      }
+      
+      // Se não tem timezone (foi criado com dayjs() sem .tz()),
+      // precisamos pegar o UTC timestamp e converter para o timezone configurado
+      if (!inputTz) {
+        // Obtém o timestamp UTC e cria um novo objeto no timezone correto
+        return dayjsFactory.tz(input.toDate(), configuredTimezone);
+      }
+      
+      // Converte para o timezone configurado mantendo o mesmo instante no tempo
+      return (input as any).tz(configuredTimezone);
+    }
+
+    // Se é uma string ou Date, converte para o timezone configurado
+    if (typeof input === 'string') {
+      // Se é uma string ISO com Z ou offset, primeiro converte para Date para preservar o momento exato
+      if (input.includes('Z') || input.match(/[+-]\d{2}:\d{2}$/)) {
+        return dayjsFactory.tz(new Date(input), configuredTimezone);
+      }
+      // Se é uma string sem timezone, assume que já está no timezone local desejado
+      return dayjsFactory.tz(input, configuredTimezone);
+    }
+
+    if (input instanceof Date) {
+      return dayjsFactory.tz(input, configuredTimezone);
+    }
+
+    // Fallback: tenta converter normalmente
+    return dayjsFactory.tz(input, configuredTimezone);
   }
 
   function setBusinessTime(businessHours: BusinessHoursMap) {
@@ -505,13 +571,17 @@ const businessTime = (
   }
 
   function fixDatesToCalculateDiff(base, comparator) {
-    let from: Dayjs = base.clone();
-    let to: Dayjs = comparator.clone();
+    // Garante que ambas as datas estejam no timezone correto
+    const baseConverted = ensureTimezone(base);
+    const comparatorConverted = ensureTimezone(comparator);
+
+    let from: Dayjs = baseConverted.clone();
+    let to: Dayjs = comparatorConverted.clone();
     let multiplier = 1;
 
-    if (base.isAfter(comparator)) {
-      to = base.clone();
-      from = comparator.clone();
+    if (baseConverted.isAfter(comparatorConverted)) {
+      to = baseConverted.clone();
+      from = comparatorConverted.clone();
       multiplier = -1;
     }
 
@@ -692,6 +762,8 @@ const businessTime = (
   dayjsFactory.setHolidays = setHolidays;
   dayjsFactory.getBusinessTime = getBusinessTime;
   dayjsFactory.setBusinessTime = setBusinessTime;
+  dayjsFactory.setTZBusinessTime = setTZBusinessTime;
+  dayjsFactory.getTZBusinessTime = getTZBusinessTime;
 
   // New methods on Dayjs class
   DayjsClass.prototype.isHoliday = isHoliday;

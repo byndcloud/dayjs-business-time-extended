@@ -20,7 +20,7 @@ Original package on npm:
 - [x] Fix bug when calculating the last business time
 - [x] Prevent crashes when setting an invalid time range (start > end)
 - [ ] Implement addBusinessSeconds and subtractBusinessSeconds
-- [ ] Consider timezone
+- [x] Consider timezone
 - [ ] Allow configuring business hours on non-business days (special service shifts).
 
 * Business Days
@@ -39,6 +39,7 @@ Original package on npm:
   * [Getting Holidays](#getting-holidays)
   * [Setting Business Times](#setting-business-times)
   * [Getting Business Times](#getting-business-times)
+  * [Setting Timezone](#setting-timezone)
 * [Checking](#checking)
   * [Check if a date is a Holiday](#check-if-a-date-is-a-holiday)
   * [Check if a date is a Business Day](#check-if-a-date-is-a-business-day)
@@ -162,6 +163,151 @@ const businessTimes: BusinessHoursMap = {
 // Set Business Times in dayjs
 dayjs.setBusinessTime(businessTimes);
 ````
+
+### Setting Timezone
+
+> **Important**: Timezone support ensures consistent business time calculations across different system timezones.
+
+By default, all date and time calculations are performed in the system's local timezone. However, when working in distributed environments (e.g., Docker containers with UTC, local machines with different timezones), you may want to ensure all business time calculations are performed in a specific timezone.
+
+The `setTZBusinessTime()` function allows you to configure a default timezone for all business time operations. When set, all dates passed to business time calculation methods (like `businessMinutesDiff`, `businessHoursDiff`, etc.) are automatically converted to the specified timezone before processing.
+
+#### Basic Usage
+
+````typescript
+// Configure the timezone (uses IANA timezone names)
+dayjs.setTZBusinessTime('America/Sao_Paulo'); // UTC-3
+
+// Now you can create dates in any format - they will be automatically converted
+const start = dayjs('2026-01-02 08:00:00');
+const end = dayjs(new Date());
+
+// Business time calculations are performed in the configured timezone
+const diff = start.businessMinutesDiff(end);
+````
+
+#### Why Use Timezone Configuration?
+
+**Problem**: When you define business hours as `{ start: '13:00:00', end: '16:00:00' }`, you typically mean these hours in your local business timezone. However, if your code runs in different environments:
+
+- **Local machine** (e.g., UTC-3): `08:00:00` is interpreted as 08:00 UTC-3 (11:00 UTC)
+- **Docker container** (e.g., UTC): `08:00:00` is interpreted as 08:00 UTC
+- This 3-hour difference causes inconsistent business time calculations!
+
+**Solution**: Use `setTZBusinessTime()` to ensure all times are interpreted in your business timezone:
+
+````typescript
+// Set your business timezone
+dayjs.setTZBusinessTime('America/Sao_Paulo'); // UTC-3
+
+// Define business hours (always in UTC-3 now)
+dayjs.setBusinessTime({
+  monday: [{ start: '13:00:00', end: '16:00:00' }],
+  tuesday: [{ start: '13:00:00', end: '16:00:00' }],
+  // ...
+});
+
+// All dates are automatically converted to UTC-3 before calculations
+const start = dayjs('2026-01-02 08:00:00');
+const end = dayjs(new Date());
+
+const minutesDiff = start.businessMinutesDiff(end);
+// Result is consistent regardless of system timezone!
+````
+
+#### Supported Input Formats
+
+The automatic timezone conversion works with all common date formats:
+
+````typescript
+dayjs.setTZBusinessTime('America/New_York');
+
+// String without timezone
+const date1 = dayjs('2026-01-02 14:00:00');
+
+// ISO string with UTC
+const date2 = dayjs('2026-01-02T17:00:00.000Z');
+
+// JavaScript Date object
+const date3 = dayjs(new Date());
+
+// All of the above are automatically converted to America/New_York
+// before business time calculations
+````
+
+#### Getting Current Timezone
+
+````typescript
+// Set timezone
+dayjs.setTZBusinessTime('Europe/London');
+
+// Get currently configured timezone
+const currentTz = dayjs.getTZBusinessTime();
+console.log(currentTz); // 'Europe/London'
+````
+
+#### Common Timezone Examples
+
+````typescript
+// Americas
+dayjs.setTZBusinessTime('America/New_York');      // UTC-5/-4 (EST/EDT)
+dayjs.setTZBusinessTime('America/Chicago');       // UTC-6/-5 (CST/CDT)
+dayjs.setTZBusinessTime('America/Los_Angeles');   // UTC-8/-7 (PST/PDT)
+dayjs.setTZBusinessTime('America/Sao_Paulo');     // UTC-3 (BRT)
+
+// Europe
+dayjs.setTZBusinessTime('Europe/London');         // UTC+0/+1 (GMT/BST)
+dayjs.setTZBusinessTime('Europe/Paris');          // UTC+1/+2 (CET/CEST)
+dayjs.setTZBusinessTime('Europe/Moscow');         // UTC+3 (MSK)
+
+// Asia
+dayjs.setTZBusinessTime('Asia/Tokyo');            // UTC+9 (JST)
+dayjs.setTZBusinessTime('Asia/Shanghai');         // UTC+8 (CST)
+dayjs.setTZBusinessTime('Asia/Kolkata');          // UTC+5:30 (IST)
+
+// Australia
+dayjs.setTZBusinessTime('Australia/Sydney');      // UTC+10/+11 (AEST/AEDT)
+````
+
+#### Complete Example
+
+````typescript
+const dayjs = require('dayjs');
+const businessTime = require('dayjs-business-time');
+
+// Extend dayjs (UTC and timezone plugins are automatically included)
+dayjs.extend(businessTime);
+
+// Configure timezone for business operations
+dayjs.setTZBusinessTime('America/Sao_Paulo');
+
+// Configure business hours (in UTC-3)
+dayjs.setBusinessTime({
+  sunday: [{ start: '13:00:00', end: '16:00:00' }],
+  monday: [{ start: '13:00:00', end: '16:00:00' }],
+  tuesday: [{ start: '13:00:00', end: '16:00:00' }],
+  wednesday: [{ start: '13:00:00', end: '16:00:00' }],
+  thursday: [{ start: '13:00:00', end: '16:00:00' }],
+  friday: [{ start: '13:00:00', end: '16:00:00' }],
+  saturday: [{ start: '13:00:00', end: '16:00:00' }],
+});
+
+// Create dates (will be auto-converted to UTC-3 in calculations)
+const start = dayjs('2026-01-02 08:00:00');
+const end = dayjs(new Date());
+
+// Calculate business time difference
+const minutes = start.businessMinutesDiff(end);
+const hours = start.businessHoursDiff(end);
+const seconds = start.businessSecondsDiff(end);
+
+console.log('Business Minutes:', minutes);
+console.log('Business Hours:', hours);
+console.log('Business Seconds:', seconds);
+// Results are consistent across all environments!
+````
+
+**Note**: The UTC and timezone plugins from Day.js are automatically loaded when you extend `dayjs-business-time`, so you don't need to manually extend them.
 
 ## Checking
 
