@@ -1,7 +1,7 @@
 {
-  "name": "dayjs-business-time",
-  "version": "1.0.4",
-  "author": "Alexsander Lira",
+  "name": "dayjs-business-time-extended",
+  "version": "1.1.0",
+  "author": "Luiz Albuquerque",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "license": "MIT",
@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rankmyapp/dayjs-business-time.git"
+    "url": "git+https://github.com/rankmyapp/dayjs-business-time-extended.git"
   },
   "scripts": {
     "test": "jest",
@@ -60,12 +60,12 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   },
-  "description": "A [Day.js](https://github.com/iamkun/dayjs) plugin that allows you to work with Business Time.",
+  "description": "A [Day.js](https://github.com/byndcloud/dayjs-business-time-extended#) plugin that allows you to work with Business Time.",
   "directories": {
     "test": "test"
   },
   "bugs": {
-    "url": "https://github.com/rankmyapp/dayjs-business-time/issues"
+    "url": "https://github.com/byndcloud/dayjs-business-time-extended/issues"
   },
-  "homepage": "https://github.com/rankmyapp/dayjs-business-time#readme"
+  "homepage": "https://github.com/byndcloud/dayjs-business-time-extended#readme"
 }
