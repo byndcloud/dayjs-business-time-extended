@@ -52,7 +52,7 @@ describe('Holidays (new format)', () => {
     expect(seconds).toBe(outputExpectedInSeconds);
   });
 
-  it('should support multiple ovettime days add segments including partial overlap with business hours', () => {
+  it('should support multiple overtime days add segments including partial overlap with business hours', () => {
     const overTimeDays = {
       '2025-12-25': [
         { start: '12:00:00', end: '18:00:00' },
