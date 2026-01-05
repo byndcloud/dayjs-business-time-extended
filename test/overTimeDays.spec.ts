@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import businessTime from '../src';
 
-describe('Holidays (new format)', () => {
+describe('overtimeDaysTimes (new format)', () => {
   beforeAll(() => {
     dayjs.extend(businessTime);
 
