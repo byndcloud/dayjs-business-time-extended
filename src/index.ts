@@ -11,6 +11,8 @@ import dayjs, {
   Dayjs,
 } from 'dayjs';
 
+
+
 const DEFAULT_WORKING_HOURS = {
   sunday: null,
   monday: [{ start: '09:00:00', end: '17:00:00' }],
@@ -198,7 +200,7 @@ const businessTime = (
 
   function isFullHoliday(date: Dayjs) {
     const holidays = getHolidays();
-    const key = date.format('YYYY-MM-DD');
+    const key = ensureTimezone(date).format('YYYY-MM-DD');
 
     if (Array.isArray(holidays)) {
       return holidays.includes(key);
@@ -215,7 +217,7 @@ const businessTime = (
 
   function getHolidayExcludedHours(date: Dayjs): any {
     const holidays = getHolidays();
-    const key = date.format('YYYY-MM-DD');
+    const key = ensureTimezone(date).format('YYYY-MM-DD');
 
     if (Array.isArray(holidays)) {
       return holidays.includes(key) ? null : undefined;
@@ -304,7 +306,7 @@ const businessTime = (
   }
 
   function getEffectiveBusinessTimeSegments(day: Dayjs): BusinessTimeSegment[] {
-    const date = day.clone();
+    const date = ensureTimezone(day).clone();
 
     if (isFullHoliday(date)) {
       return null;
@@ -331,7 +333,7 @@ const businessTime = (
   }
 
   function isHoliday() {
-    const today = this.format('YYYY-MM-DD');
+    const today = ensureTimezone(this).format('YYYY-MM-DD');
     const holidays = getHolidays();
 
     if (Array.isArray(holidays)) {
@@ -413,65 +415,69 @@ const businessTime = (
   }
 
   function isBusinessTime() {
-    return !!getCurrentBusinessTimeSegment(this);
+    return !!getCurrentBusinessTimeSegment(ensureTimezone(this));
   }
 
   function nextBusinessTime() {
-    if (!this.isBusinessDay()) {
-      const nextBusinessDay = this.nextBusinessDay();
+    const date = ensureTimezone(this);
+
+    if (!date.isBusinessDay()) {
+      const nextBusinessDay = date.nextBusinessDay();
       return getBusinessTimeSegments(nextBusinessDay)[0].start;
     }
 
-    const segments = getBusinessTimeSegments(this);
+    const segments = getBusinessTimeSegments(date);
 
     for (let index = 0; index < segments.length; index++) {
       const { start, end } = segments[index];
       const isLastSegment = index === segments.length - 1;
 
-      if (this.isBefore(start)) {
+      if (date.isBefore(start)) {
         return start;
       }
 
-      if (this.isAfter(end)) {
+      if (date.isAfter(end)) {
         if (!isLastSegment) {
           continue;
         }
 
-        const nextBusinessDay = this.nextBusinessDay();
+        const nextBusinessDay = date.nextBusinessDay();
         return getBusinessTimeSegments(nextBusinessDay)[0].start;
       }
 
-      return this.clone();
+      return date.clone();
     }
   }
 
   function lastBusinessTime() {
-    if (!this.isBusinessDay()) {
-      const lastBusinessDay = this.lastBusinessDay();
+    const date = ensureTimezone(this);
+
+    if (!date.isBusinessDay()) {
+      const lastBusinessDay = date.lastBusinessDay();
       const { end } = getBusinessTimeSegments(lastBusinessDay).pop();
       return end;
     }
 
-    const segments = getBusinessTimeSegments(this).reverse();
+    const segments = getBusinessTimeSegments(date).reverse();
 
     for (let index = 0; index < segments.length; index++) {
       const { start, end } = segments[index];
       const isFirstSegment = index === segments.length - 1;
 
-      if (this.isAfter(end)) {
+      if (date.isAfter(end)) {
         return end;
       }
 
-      if (this.isBefore(start)) {
+      if (date.isBefore(start)) {
         if (!isFirstSegment) {
           continue;
         }
 
-        const lastBusinessDay = this.lastBusinessDay();
+        const lastBusinessDay = date.lastBusinessDay();
         return getBusinessTimeSegments(lastBusinessDay).pop().end;
       }
 
-      return this.clone();
+      return date.clone();
     }
   }
 
