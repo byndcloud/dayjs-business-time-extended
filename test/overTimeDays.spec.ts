@@ -46,10 +46,10 @@ describe('overtimeDaysTimes (new format)', () => {
     const inicio = dayjs('2025-12-24 20:00:00');
     const fim = dayjs('2025-12-25 11:00:00');
 
-    const outputExpectedInSeconds = 5;
+    const outputExpectedInHours = 5;
     const seconds = (inicio as any).businessHoursDiff(fim);
 
-    expect(seconds).toBe(outputExpectedInSeconds);
+    expect(seconds).toBe(outputExpectedInHours);
   });
 
   it('should support multiple overtime days add segments including partial overlap with business hours', () => {
