@@ -9,7 +9,7 @@ import dayjs, {
   BusinessTimeSegment,
   BusinessUnitType,
   Dayjs,
-  HolidaysMap,
+  SpecialTimesMap,
 } from 'dayjs';
 import { DaysNames, DEFAULT_WORKING_HOURS } from './constants';
 
@@ -813,7 +813,7 @@ const businessTime = (
     return getLocale()?.overtimeDays || [];
   }
 
-  function setOvertimeDays(overtimeDays: HolidaysMap) {
+  function setOvertimeDays(overtimeDays: SpecialTimesMap) {
     validateBusinessHoursMap(overtimeDays, 'overtimeDays');
     updateLocale({ overtimeDays });
   }

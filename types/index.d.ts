@@ -4,13 +4,13 @@ declare const plugin: PluginFunc;
 export = plugin;
 
 declare module 'dayjs' {
-  export type HolidaysMap = Record<string, BusinessHours[] | null>;
-  export type Holidays = string[] | HolidaysMap;
+  export type SpecialTimesMap = Record<string, BusinessHours[] | null>;
+  export type SpecialTimes = string[] | SpecialTimesMap;
 
-  export function getHolidays(): Holidays;
-  export function getOvertimeDays(): Holidays;
-  export function setHolidays(holidays: Holidays): void;
-  export function setOvertimeDays(overtimeDays: HolidaysMap): void;
+  export function getHolidays(): SpecialTimes;
+  export function getOvertimeDays(): SpecialTimes;
+  export function setHolidays(holidays: SpecialTimes): void;
+  export function setOvertimeDays(overtimeDays: SpecialTimesMap): void;
   export function getBusinessTime(): BusinessHoursMap;
   export function setBusinessTime(businessHours: BusinessHoursMap): void;
   export function setTZBusinessTime(timeZone: string): void;
@@ -69,8 +69,8 @@ declare module 'dayjs' {
   }
 
   export interface ILocale {
-    holidays: Holidays;
+    holidays: SpecialTimes;
     businessHours: BusinessHoursMap;
-    overtimeDays: Holidays;
+    overtimeDays: SpecialTimes;
   }
 }
