@@ -9,27 +9,9 @@ import dayjs, {
   BusinessTimeSegment,
   BusinessUnitType,
   Dayjs,
+  HolidaysMap,
 } from 'dayjs';
-
-const DEFAULT_WORKING_HOURS = {
-  sunday: null,
-  monday: [{ start: '09:00:00', end: '17:00:00' }],
-  tuesday: [{ start: '09:00:00', end: '17:00:00' }],
-  wednesday: [{ start: '09:00:00', end: '17:00:00' }],
-  thursday: [{ start: '09:00:00', end: '17:00:00' }],
-  friday: [{ start: '09:00:00', end: '17:00:00' }],
-  saturday: null,
-};
-
-enum DaysNames {
-  sunday = 0,
-  monday = 1,
-  tuesday = 2,
-  wednesday = 3,
-  thursday = 4,
-  friday = 5,
-  saturday = 6,
-}
+import { DaysNames, DEFAULT_WORKING_HOURS } from './constants';
 
 const businessTime = (
   option: any,
@@ -122,14 +104,14 @@ const businessTime = (
       if (inputTz === configuredTimezone) {
         return input;
       }
-      
+
       // Se não tem timezone (foi criado com dayjs() sem .tz()),
       // precisamos pegar o UTC timestamp e converter para o timezone configurado
       if (!inputTz) {
         // Obtém o timestamp UTC e cria um novo objeto no timezone correto
         return dayjsFactory.tz(input.toDate(), configuredTimezone);
       }
-      
+
       // Converte para o timezone configurado mantendo o mesmo instante no tempo
       return (input as any).tz(configuredTimezone);
     }
@@ -157,7 +139,10 @@ const businessTime = (
     updateLocale({ businessHours });
   }
 
-  function validateTimeRange(timeRange: { start: string; end: string }, path: string) {
+  function validateTimeRange(
+    timeRange: { start: string; end: string },
+    path: string,
+  ) {
     const start = timeStringToDayJS(timeRange.start);
     const end = timeStringToDayJS(timeRange.end);
 
@@ -174,12 +159,16 @@ const businessTime = (
     }
 
     if (!Array.isArray(hours)) {
-      throw new Error(`Invalid business hours at ${path}: expected array or null`);
+      throw new Error(
+        `Invalid business hours at ${path}: expected array or null`,
+      );
     }
 
     hours.forEach((range, index) => {
       if (!range || typeof range !== 'object') {
-        throw new Error(`Invalid business hours at ${path}[${index}]: expected object`);
+        throw new Error(
+          `Invalid business hours at ${path}[${index}]: expected object`,
+        );
       }
 
       validateTimeRange(range, `${path}[${index}]`);
@@ -230,6 +219,58 @@ const businessTime = (
     return undefined;
   }
 
+  function getOvertimeDaysAddHours(date: Dayjs): any {
+    const overtimeDays = getOvertimeDays();
+    const key = date.format('YYYY-MM-DD');
+
+    if (overtimeDays && typeof overtimeDays === 'object') {
+      if (Object.prototype.hasOwnProperty.call(overtimeDays, key)) {
+        return overtimeDays[key];
+      }
+    }
+
+    return undefined;
+  }
+
+  function orderByDates(
+    segments: BusinessTimeSegment[],
+  ): BusinessTimeSegment[] {
+    return segments.sort((a, b) => a.start.valueOf() - b.start.valueOf());
+  }
+
+  function excludeRepeatedSegments(
+    segments: BusinessTimeSegment[],
+    uniqueSegments: BusinessTimeSegment[],
+  ): BusinessTimeSegment[] {
+    uniqueSegments?.forEach((segment) => {
+      const { start, end } = segment;
+
+      segments.forEach((unique) => {
+        const { start: uniqueStart, end: uniqueEnd } = unique;
+
+        if (uniqueStart.isSameOrBefore(start) && uniqueEnd.isSameOrAfter(end)) {
+          segment.start = null;
+          segment.end = null;
+          return;
+        }
+
+        if (uniqueStart.isSameOrAfter(start) && uniqueEnd.isSameOrBefore(end)) {
+          segment.end = uniqueStart;
+        }
+
+        if (uniqueStart.isSameOrBefore(start) && uniqueEnd.isBefore(end)) {
+          segment.start = uniqueEnd;
+        }
+      });
+    });
+
+    const filteredSegments = [...uniqueSegments, ...segments]?.filter(
+      ({ start, end }) => start && end && !start.isSame(end),
+    );
+
+    return orderByDates(filteredSegments);
+  }
+
   function buildSegmentsFromHours(
     date: Dayjs,
     hours: any,
@@ -246,8 +287,7 @@ const businessTime = (
       return acc;
     }, []);
 
-    segments.sort((a, b) => a.start.valueOf() - b.start.valueOf());
-    return segments;
+    return orderByDates(segments);
   }
 
   function subtractSegments(
@@ -269,7 +309,8 @@ const businessTime = (
         const exStart = excluded.start;
         const exEnd = excluded.end;
 
-        const hasOverlap = exStart.isBefore(baseEnd) && exEnd.isAfter(baseStart);
+        const hasOverlap =
+          exStart.isBefore(baseEnd) && exEnd.isAfter(baseStart);
         if (!hasOverlap) {
           next.push(base);
           continue;
@@ -311,15 +352,27 @@ const businessTime = (
     }
 
     const dayName = DaysNames[date.day()];
-    const businessHours = getBusinessTime()[dayName];
-    const baseSegments = buildSegmentsFromHours(date, businessHours);
+    const businessHours = getBusinessTime()[dayName] || [];
+    const overtimeDays = getOvertimeDaysAddHours(date) || [];
+
+    const baseSegments = buildSegmentsFromHours(date, [...businessHours]);
+
+    const overtimeDaysSegments = buildSegmentsFromHours(date, [
+      ...overtimeDays,
+    ]);
+
     if (!baseSegments?.length) {
       return null;
     }
 
+    const excludeConflictingSegments = excludeRepeatedSegments(
+      baseSegments,
+      overtimeDaysSegments,
+    );
     const excludedHours = getHolidayExcludedHours(date);
+
     if (excludedHours === undefined) {
-      return baseSegments;
+      return excludeConflictingSegments;
     }
 
     if (excludedHours === null) {
@@ -327,7 +380,7 @@ const businessTime = (
     }
 
     const excludedSegments = buildSegmentsFromHours(date, excludedHours);
-    return subtractSegments(baseSegments, excludedSegments);
+    return subtractSegments(excludeConflictingSegments, excludedSegments);
   }
 
   function isHoliday() {
@@ -695,7 +748,7 @@ const businessTime = (
           break;
         } else if (from.isSameOrAfter(start) && from.isSameOrBefore(end)) {
           diff += end.diff(from, 'minutes');
-        } 
+        }
       }
 
       return diff ? diff * multiplier : 0;
@@ -756,10 +809,20 @@ const businessTime = (
 
     throw new Error('Invalid Business Time Unit');
   }
+  function getOvertimeDays() {
+    return getLocale()?.overtimeDays || [];
+  }
+
+  function setOvertimeDays(overtimeDays: HolidaysMap) {
+    validateBusinessHoursMap(overtimeDays, 'overtimeDays');
+    updateLocale({ overtimeDays });
+  }
 
   // New functions on dayjs factory
   dayjsFactory.getHolidays = getHolidays;
   dayjsFactory.setHolidays = setHolidays;
+  dayjsFactory.getOvertimeDays = getOvertimeDays;
+  dayjsFactory.setOvertimeDays = setOvertimeDays;
   dayjsFactory.getBusinessTime = getBusinessTime;
   dayjsFactory.setBusinessTime = setBusinessTime;
   dayjsFactory.setTZBusinessTime = setTZBusinessTime;
