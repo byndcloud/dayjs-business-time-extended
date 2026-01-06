@@ -19,7 +19,7 @@ Original package on npm:
 - [x] Fix bug when calculating the next business time
 - [x] Fix bug when calculating the last business time
 - [x] Prevent crashes when setting an invalid time range (start > end)
-- [ ] Implement addBusinessSeconds and subtractBusinessSeconds
+- [x] Implement addBusinessSeconds, subtractBusinessSeconds, subtractBusinessTime (in seconds), businessTimeDiff (in seconds), addBusinessSeconds(in seconds)
 - [x] Consider timezone
 - [ ] Allow configuring business hours on non-business days (special service shifts).
 

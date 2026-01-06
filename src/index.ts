@@ -485,12 +485,20 @@ const businessTime = (
     return addOrSubtractBusinessMinutes(this, minutesToAdd);
   }
 
+  function addBusinessSeconds(secondsToAdd: number): Dayjs {
+    return addOrSubtractBusinessSeconds(this, secondsToAdd);
+  }
+
   function addBusinessHours(hoursToAdd: number): Dayjs {
     const minutesToAdd = hoursToAdd * 60;
     return this.addBusinessMinutes(minutesToAdd);
   }
 
   function addBusinessTime(timeToAdd: number, businessUnit: BusinessUnitType) {
+    if (businessUnit.match(/^(second)+s?$/)) {
+      return this.addBusinessSeconds(timeToAdd);
+    }
+
     if (businessUnit.match(/^(minute)+s?$/)) {
       return this.addBusinessMinutes(timeToAdd);
     }
@@ -548,8 +556,54 @@ const businessTime = (
     return date;
   }
 
+  function addOrSubtractBusinessSeconds(
+    day: Dayjs,
+    numberOfSeconds: number,
+    action: 'add' | 'subtract' = 'add',
+  ): Dayjs {
+    let date =
+      action === 'add' ? day.nextBusinessTime() : day.lastBusinessTime();
+
+    while (numberOfSeconds) {
+      const segment = getCurrentBusinessTimeSegment(
+        date,
+      ) as BusinessTimeSegment;
+
+      if (!segment) {
+        date =
+          action === 'add' ? date.nextBusinessTime() : date.lastBusinessTime();
+        continue;
+      }
+
+      const { start, end } = segment;
+
+      const compareBaseDate = action === 'add' ? end : date;
+      const compareDate = action === 'add' ? date : start;
+
+      let timeToJump = compareBaseDate.diff(compareDate, 'second');
+
+      if (timeToJump > numberOfSeconds) {
+        timeToJump = numberOfSeconds;
+      }
+
+      numberOfSeconds -= timeToJump;
+
+      if (!timeToJump && numberOfSeconds) {
+        timeToJump = 1;
+      }
+
+      date = date[action](timeToJump, 'second');
+    }
+
+    return date;
+  }
+
   function subtractBusinessMinutes(minutesToSubtract: number): Dayjs {
     return addOrSubtractBusinessMinutes(this, minutesToSubtract, 'subtract');
+  }
+
+  function subtractBusinessSeconds(secondsToSubtract: number): Dayjs {
+    return addOrSubtractBusinessSeconds(this, secondsToSubtract, 'subtract');
   }
 
   function subtractBusinessHours(hoursToSubtract: number): Dayjs {
@@ -561,6 +615,10 @@ const businessTime = (
     timeToSubtract: number,
     businessUnit: BusinessUnitType,
   ) {
+    if (businessUnit.match(/^(second)+s?$/)) {
+      return this.subtractBusinessSeconds(timeToSubtract);
+    }
+
     if (businessUnit.match(/^(minute)+s?$/)) {
       return this.subtractBusinessMinutes(timeToSubtract);
     }
@@ -748,6 +806,10 @@ const businessTime = (
   }
 
   function businessTimeDiff(comparator: Dayjs, businessUnit: BusinessUnitType) {
+    if (businessUnit.match(/^(second)+s?$/)) {
+      return this.businessSecondsDiff(comparator);
+    }
+
     if (businessUnit.match(/^(minute)+s?$/)) {
       return this.businessMinutesDiff(comparator);
     }
@@ -784,7 +846,9 @@ const businessTime = (
   DayjsClass.prototype.addBusinessTime = addBusinessTime;
   DayjsClass.prototype.addBusinessHours = addBusinessHours;
   DayjsClass.prototype.addBusinessMinutes = addBusinessMinutes;
+  DayjsClass.prototype.addBusinessSeconds = addBusinessSeconds;
   DayjsClass.prototype.subtractBusinessMinutes = subtractBusinessMinutes;
+  DayjsClass.prototype.subtractBusinessSeconds = subtractBusinessSeconds;
   DayjsClass.prototype.subtractBusinessHours = subtractBusinessHours;
   DayjsClass.prototype.subtractBusinessTime = subtractBusinessTime;
   DayjsClass.prototype.businessMinutesDiff = businessMinutesDiff;

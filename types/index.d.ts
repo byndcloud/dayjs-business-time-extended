@@ -14,7 +14,7 @@ declare module 'dayjs' {
   export function setTZBusinessTime(timeZone: string): void;
   export function getTZBusinessTime(): string | null;
 
-  export type BusinessUnitType = 'minute' | 'minutes' | 'hour' | 'hours' | 'day' | 'days';
+  export type BusinessUnitType = 'minute' | 'minutes' | 'hour' | 'hours' | 'day' | 'days' | 'second' | 'seconds';
   export interface Dayjs {
     isBusinessDay(): boolean,
     isHoliday(): boolean,
@@ -27,8 +27,10 @@ declare module 'dayjs' {
     subtractBusinessDays(numberOfDays: number): Dayjs,
     addBusinessHours(numberOfHours: number): Dayjs,
     addBusinessMinutes(numberOfMinutes: number): Dayjs,
+    addBusinessSeconds(numberOfSeconds: number): Dayjs,
     addBusinessTime(timeToAdd: number, businessUnit: BusinessUnitType): Dayjs,
     subtractBusinessMinutes(numberOfMinutes: number): Dayjs;
+    subtractBusinessSeconds(numberOfSeconds: number): Dayjs;
     subtractBusinessHours(numberOfHours: number): Dayjs,
     subtractBusinessTime(timeToSubtract: number, businessUnit: BusinessUnitType): Dayjs,
     businessSecondsDiff(comparator: Dayjs): number

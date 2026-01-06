@@ -28,6 +28,16 @@ describe('Add Business Time', () => {
     expect(newDate).toStrictEqual(expected);
   });
 
+  it('should add 90 business seconds on a date crossing working segments', () => {
+    const date = dayjs('2021-02-03 11:59:30');
+    const expected = dayjs('2021-02-03 13:01:00');
+
+    const newDate = date.addBusinessTime(90, 'seconds');
+
+    expect(newDate).toBeDefined();
+    expect(newDate).toStrictEqual(expected);
+  });
+
   it('should add 4 business day on a day before a weekend', () => {
     // february 19th, 2021 is a friday
     const date = dayjs('2021-02-19');

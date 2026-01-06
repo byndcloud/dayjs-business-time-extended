@@ -28,6 +28,26 @@ describe('Business Minutes Diff', () => {
     expect(diff).toBe(30);
   });
 
+  it('should get the 30 business seconds diff between 2 times', () => {
+    const start = dayjs('2021-02-08 09:00:00');
+    const end = dayjs('2021-02-08 09:00:30');
+
+    const diff = start.businessTimeDiff(end, 'seconds');
+
+    expect(diff).toBeDefined();
+    expect(diff).toBe(30);
+  });
+
+  it('should get the 90 business seconds diff between 2 times crossing working segments', () => {
+    const start = dayjs('2021-02-03 11:59:30');
+    const end = dayjs('2021-02-03 13:01:00');
+
+    const diff = start.businessTimeDiff(end, 'seconds');
+
+    expect(diff).toBeDefined();
+    expect(diff).toBe(90);
+  });
+
   it('should get the 90 business minutes diff between 2 times in different days', () => {
     const start = dayjs('2021-02-08 16:45:00');
     const end = dayjs('2021-02-09 10:15:00');
