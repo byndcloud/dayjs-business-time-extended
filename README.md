@@ -19,7 +19,7 @@ Original package on npm:
 - [x] Fix bug when calculating the next business time
 - [x] Fix bug when calculating the last business time
 - [x] Prevent crashes when setting an invalid time range (start > end)
-- [x] Implement addBusinessSeconds, subtractBusinessSeconds, subtractBusinessTime (in seconds), businessTimeDiff (in seconds), addBusinessSeconds(in seconds)
+- [x] Implement addBusinessSeconds, subtractBusinessSeconds, addBusinessTime (in seconds), subtractBusinessTime (in seconds), businessTimeDiff (in seconds)
 - [x] Consider timezone
 - [ ] Allow configuring business hours on non-business days (special service shifts).
 
@@ -54,11 +54,13 @@ Original package on npm:
   * [Add Business Days](#add-business-days)
   * [Add Business Hours](#add-business-hours)
   * [Add Business Minutes](#add-business-minutes)
+  * [Add Business Seconds](#add-business-seconds)
 * [Subtracting Business Time](#subtracting-business-time)
   * [Subtract Business Time](#subtract-business-time)
   * [Subtract Business Days](#subtract-business-days)
   * [Subtract Business Hours](#subtract-business-hours)
   * [Subtract Business Minutes](#subtract-business-minutes)
+  * [Subtract Business Seconds](#subtract-business-seconds)
 * [Diff](#diff)
   * [Business Time Diff](#business-time-diff)
   * [Business Days Diff](#business-days-diff)
@@ -375,7 +377,7 @@ console.log(lastBusinessTime); // 2021-01-29 17:00:00
 const day = dayjs('2021-02-01 10:00:00');
 const timeToAdd: number = 2;
 
-// Possible BusinessTimeUnit is 'day', 'days', 'hour', 'hours', 'minute', 'minutes'
+// Possible BusinessTimeUnit is 'day', 'days', 'hour', 'hours', 'minute', 'minutes', 'second', 'seconds'
 const unit: BusinessTimeUnit = 'days';
 
 const newBusinessTime: Dayjs = day.addBusinessTime(timeToAdd, unit);
@@ -422,6 +424,24 @@ const newBusinessTime: Dayjs = day.addBusinessMinutes(timeToAdd);
 console.log(newBusinessTime); // 2021-02-01 10:30:00
 ````
 
+### Add Business Seconds
+
+This method is just an alias for `.addBusinessTime(timeToAdd, 'seconds')`
+
+````typescript
+const day = dayjs('2021-02-03 11:59:30');
+
+// Adds only business seconds (it will skip non-working time, like lunch breaks)
+const newBusinessTime: Dayjs = day.addBusinessSeconds(90);
+
+console.log(newBusinessTime); // 2021-02-03 13:01:00
+
+// Equivalent using addBusinessTime with unit 'seconds'
+const newBusinessTime2: Dayjs = day.addBusinessTime(90, 'seconds');
+
+console.log(newBusinessTime2); // 2021-02-03 13:01:00
+````
+
 ## Subtracting Business Time
 
 ### Subtract Business Time
@@ -429,7 +449,7 @@ console.log(newBusinessTime); // 2021-02-01 10:30:00
 const day = dayjs('2021-02-01 10:00:00');
 const timeToSubtract: number = 2;
 
-// Possible BusinessTimeUnit is 'day', 'days', 'hour', 'hours', 'minute', 'minutes'
+// Possible BusinessTimeUnit is 'day', 'days', 'hour', 'hours', 'minute', 'minutes', 'second', 'seconds'
 const unit: BusinessTimeUnit = 'days';
 
 const newBusinessTime: Dayjs = day.subtractBusinessTime(timeToSubtract, unit);
@@ -476,6 +496,24 @@ const newBusinessTime: Dayjs = day.subtractBusinessMinutes(timeToSubtract);
 console.log(newBusinessTime); // 2021-02-01 09:30:00
 ````
 
+### Subtract Business Seconds
+
+This method is just an alias for `.subtractBusinessTime(timeToSubtract, 'seconds')`
+
+````typescript
+const day = dayjs('2021-02-03 13:00:30');
+
+// Subtracts only business seconds (it will skip non-working time, like lunch breaks)
+const newBusinessTime: Dayjs = day.subtractBusinessSeconds(90);
+
+console.log(newBusinessTime); // 2021-02-03 11:59:00
+
+// Equivalent using subtractBusinessTime with unit 'seconds'
+const newBusinessTime2: Dayjs = day.subtractBusinessTime(90, 'seconds');
+
+console.log(newBusinessTime2); // 2021-02-03 11:59:00
+````
+
 ## Diff
 
 ### Business Time Diff
@@ -483,12 +521,23 @@ console.log(newBusinessTime); // 2021-02-01 09:30:00
 const start: Dayjs = dayjs('2021-02-01 10:00:00');
 const end: Dayjs = dayjs('2021-02-04 10:00:00');
 
-// Possible BusinessTimeUnit is 'day', 'days', 'hour', 'hours', 'minute', 'minutes'
+// Possible BusinessTimeUnit is 'day', 'days', 'hour', 'hours', 'minute', 'minutes', 'second', 'seconds'
 const unit: BusinessTimeUnit = 'days';
 
 const difference: number = start.businessTimeDiff(end, unit);
 
 console.log(difference); // 3
+````
+
+You can also calculate business time diffs in seconds:
+
+````typescript
+const start: Dayjs = dayjs('2021-02-08 09:00:00');
+const end: Dayjs = dayjs('2021-02-08 09:00:30');
+
+const differenceInSeconds: number = start.businessTimeDiff(end, 'seconds');
+
+console.log(differenceInSeconds); // 30
 ````
 
 ### Business Days Diff
