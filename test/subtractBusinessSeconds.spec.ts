@@ -76,4 +76,27 @@ describe('Subtract Business Seconds', () => {
       expect(result.format('YYYY-MM-DD HH:mm:ss')).toBe('2025-12-22 18:59:00');
     });
   });
+
+  it('should preserve minute and second when subtracting 86400 business seconds from a date with seconds', () => {
+    jest.isolateModules(() => {
+      const dayjs = require('dayjs');
+      const businessTime = require('../src');
+
+      dayjs.extend(businessTime);
+      dayjs.setBusinessTime({
+        sunday: null,
+        monday: 'full',
+        tuesday: 'full',
+        wednesday: 'full',
+        thursday: 'full',
+        friday: 'full',
+        saturday: null,
+      });
+
+      const start = dayjs('2026-04-15 10:53:30');
+      const result = start.subtractBusinessSeconds(86400);
+
+      expect(result.format('YYYY-MM-DD HH:mm:ss')).toBe('2026-04-14 10:53:30');
+    });
+  });
 });

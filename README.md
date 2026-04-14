@@ -18,6 +18,26 @@ This extended fork includes features that are not available in the original `day
 
 - `setBusinessTime()` supports the special value `'full'` for weekdays, meaning exact 24-hour business time (`00:00:00` to `00:00:00` of the next day).
 
+### Bug fixes from original package
+
+- Fixed an off-by-one behavior inherited from the original package when adding or subtracting business time from timestamps that include seconds.
+- In edge cases at segment boundaries, operations could return `+1 minute` (for add) or `-1 minute` (for subtract).
+- The fix keeps minute/second precision stable across these methods: `addBusinessMinutes`, `addBusinessHours`, `addBusinessTime('hours'|'minutes')`, `subtractBusinessMinutes`, `subtractBusinessHours`, `subtractBusinessTime('hours'|'minutes')`.
+
+Example with full business weekdays:
+
+```typescript
+const start = dayjs('2026-04-14 10:53:30');
+
+start.addBusinessMinutes(1440).format('YYYY-MM-DD HH:mm:ss');
+// 2026-04-15 10:53:30
+
+dayjs('2026-04-15 10:53:30')
+  .subtractBusinessMinutes(1440)
+  .format('YYYY-MM-DD HH:mm:ss');
+// 2026-04-14 10:53:30
+```
+
 ## Roadmap
 
 - [x] Calculate the difference in seconds between dates considering business days

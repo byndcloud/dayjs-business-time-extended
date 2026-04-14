@@ -78,4 +78,24 @@ describe('Subtract Business Minutes', () => {
     expect(newDate).toBeDefined();
     expect(newDate).toStrictEqual(expected);
   });
+
+  it('should preserve minute and second when subtracting 1440 business minutes from a date with seconds', () => {
+    dayjs.setBusinessTime({
+      sunday: null,
+      monday: 'full',
+      tuesday: 'full',
+      wednesday: 'full',
+      thursday: 'full',
+      friday: 'full',
+      saturday: null,
+    });
+
+    const date = dayjs('2026-04-15 10:53:30');
+    const expected = dayjs('2026-04-14 10:53:30');
+
+    const newDate = date.subtractBusinessMinutes(1440);
+
+    expect(newDate).toBeDefined();
+    expect(newDate).toStrictEqual(expected);
+  });
 });

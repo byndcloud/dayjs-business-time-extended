@@ -78,4 +78,24 @@ describe('Add Business Hours', () => {
     expect(newDate).toBeDefined();
     expect(newDate).toStrictEqual(expected);
   });
+
+  it('should preserve minute and second when adding 24 business hours from a date with seconds', () => {
+    dayjs.setBusinessTime({
+      sunday: null,
+      monday: 'full',
+      tuesday: 'full',
+      wednesday: 'full',
+      thursday: 'full',
+      friday: 'full',
+      saturday: null,
+    });
+
+    const date = dayjs('2026-04-14 10:53:30');
+    const expected = dayjs('2026-04-15 10:53:30');
+
+    const newDate = date.addBusinessHours(24);
+
+    expect(newDate).toBeDefined();
+    expect(newDate).toStrictEqual(expected);
+  });
 });

@@ -558,11 +558,19 @@ const businessTime = (
         timeToJump = numberOfMinutes;
       }
 
-      numberOfMinutes -= timeToJump;
-
       if (!timeToJump && numberOfMinutes) {
         timeToJump = 1;
+        const jumpedDate = date[action](timeToJump, 'minute');
+
+        if (jumpedDate.isBusinessTime()) {
+          numberOfMinutes -= timeToJump;
+        }
+
+        date = jumpedDate;
+        continue;
       }
+
+      numberOfMinutes -= timeToJump;
 
       date = date[action](timeToJump, 'minute');
     }
@@ -600,11 +608,19 @@ const businessTime = (
         timeToJump = numberOfSeconds;
       }
 
-      numberOfSeconds -= timeToJump;
-
       if (!timeToJump && numberOfSeconds) {
         timeToJump = 1;
+        const jumpedDate = date[action](timeToJump, 'second');
+
+        if (jumpedDate.isBusinessTime()) {
+          numberOfSeconds -= timeToJump;
+        }
+
+        date = jumpedDate;
+        continue;
       }
+
+      numberOfSeconds -= timeToJump;
 
       date = date[action](timeToJump, 'second');
     }
