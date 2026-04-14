@@ -163,9 +163,9 @@ const businessTime = (
     const start = timeStringToDayJS(timeRange.start);
     const end = timeStringToDayJS(timeRange.end);
 
-    if (start.isAfter(end)) {
+    if (!start.isBefore(end)) {
       throw new Error(
-        `Invalid time range at ${path}: start (${timeRange.start}) must be before or equal to end (${timeRange.end})`,
+        `Invalid time range at ${path}: start (${timeRange.start}) must be before end (${timeRange.end})`,
       );
     }
   }
@@ -175,8 +175,12 @@ const businessTime = (
       return;
     }
 
+    if (hours === 'full') {
+      return;
+    }
+
     if (!Array.isArray(hours)) {
-      throw new Error(`Invalid business hours at ${path}: expected array or null`);
+      throw new Error(`Invalid business hours at ${path}: expected array, "full", or null`);
     }
 
     hours.forEach((range, index) => {
@@ -240,8 +244,18 @@ const businessTime = (
       return null;
     }
 
+    if (hours === 'full') {
+      return [
+        {
+          start: timeStringToDayJS('00:00:00', date),
+          end: timeStringToDayJS('00:00:00', date.add(1, 'day')),
+        },
+      ];
+    }
+
     const segments = hours.reduce((acc, businessTime) => {
       let { start, end } = businessTime;
+
       start = timeStringToDayJS(start, date);
       end = timeStringToDayJS(end, date);
       acc.push({ start, end });

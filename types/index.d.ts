@@ -4,7 +4,8 @@ declare const plugin: PluginFunc
 export = plugin
 
 declare module 'dayjs' {
-  export type HolidaysMap = Record<string, BusinessHours[] | null>;
+  export type BusinessHoursValue = BusinessHours[] | 'full' | null;
+  export type HolidaysMap = Record<string, BusinessHoursValue>;
   export type Holidays = string[] | HolidaysMap;
 
   export function getHolidays(): Holidays;
@@ -40,13 +41,13 @@ declare module 'dayjs' {
     businessTimeDiff(comparator: Dayjs, businessUnit: BusinessUnitType): number,
   }
   export interface BusinessHoursMap {
-    sunday: BusinessHours[] | null;
-    monday: BusinessHours[] | null;
-    tuesday: BusinessHours[] | null;
-    wednesday: BusinessHours[] | null;
-    thursday: BusinessHours[] | null;
-    friday: BusinessHours[] | null;
-    saturday: BusinessHours[] | null;
+    sunday: BusinessHoursValue;
+    monday: BusinessHoursValue;
+    tuesday: BusinessHoursValue;
+    wednesday: BusinessHoursValue;
+    thursday: BusinessHoursValue;
+    friday: BusinessHoursValue;
+    saturday: BusinessHoursValue;
   }
 
   export interface BusinessHours {

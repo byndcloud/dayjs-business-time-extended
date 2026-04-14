@@ -78,4 +78,58 @@ describe('Add Business Minutes', () => {
     expect(newDate).toBeDefined();
     expect(newDate).toStrictEqual(expected);
   });
+
+  it('should add business minutes with full weekdays across midnight', () => {
+    dayjs.setBusinessTime({
+      sunday: null,
+      monday: 'full',
+      tuesday: 'full',
+      wednesday: 'full',
+      thursday: 'full',
+      friday: 'full',
+      saturday: null,
+    });
+
+    const date = dayjs('2021-02-03 23:30:00');
+    const expected = dayjs('2021-02-04 01:00:00');
+
+    const newDate = date.addBusinessMinutes(90);
+
+    expect(newDate).toBeDefined();
+    expect(newDate).toStrictEqual(expected);
+  });
+
+  it('should add 1440 business minutes with full weekdays', () => {
+    dayjs.setBusinessTime({
+      sunday: null,
+      monday: 'full',
+      tuesday: 'full',
+      wednesday: 'full',
+      thursday: 'full',
+      friday: 'full',
+      saturday: null,
+    });
+
+    const date = dayjs('2021-02-03 00:00:00');
+    const expected = dayjs('2021-02-04 00:00:00');
+
+    const newDate = date.addBusinessMinutes(1440);
+
+    expect(newDate).toBeDefined();
+    expect(newDate).toStrictEqual(expected);
+  });
+
+  it('should throw when weekday range has same start and end', () => {
+    expect(() => {
+      dayjs.setBusinessTime({
+        sunday: null,
+        monday: [{ start: '00:00:00', end: '00:00:00' }],
+        tuesday: [{ start: '00:00:00', end: '00:00:00' }],
+        wednesday: [{ start: '00:00:00', end: '00:00:00' }],
+        thursday: [{ start: '00:00:00', end: '00:00:00' }],
+        friday: [{ start: '00:00:00', end: '00:00:00' }],
+        saturday: null,
+      });
+    }).toThrow(/Invalid time range/);
+  });
 });

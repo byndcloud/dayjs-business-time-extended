@@ -12,6 +12,12 @@ Original package on npm:
 
 - https://www.npmjs.com/package/dayjs-business-time
 
+## Differences from original package
+
+This extended fork includes features that are not available in the original `dayjs-business-time` package.
+
+- `setBusinessTime()` supports the special value `'full'` for weekdays, meaning exact 24-hour business time (`00:00:00` to `00:00:00` of the next day).
+
 ## Roadmap
 
 - [x] Calculate the difference in seconds between dates considering business days
@@ -137,6 +143,8 @@ console.log(holidays);
 
 > By default, Business Times are Monday-Friday, 9am - 5pm, but you can setup as many Business Segments you want in a day
 
+> In this extended fork, each day can also be configured as `'full'` (all day business time).
+
 ````typescript
 // Create your Business Week definition
 const businessTimes: BusinessHoursMap = {
@@ -164,6 +172,20 @@ const businessTimes: BusinessHoursMap = {
 
 // Set Business Times in dayjs
 dayjs.setBusinessTime(businessTimes);
+````
+
+You can also configure a full business day using `'full'`:
+
+````typescript
+dayjs.setBusinessTime({
+  sunday: null,
+  monday: [{ start: '08:00:00', end: '18:00:00' }],
+  tuesday: [{ start: '08:00:00', end: '18:00:00' }],
+  wednesday: [{ start: '08:00:00', end: '18:00:00' }],
+  thursday: [{ start: '08:00:00', end: '18:00:00' }],
+  friday: 'full',
+  saturday: null,
+});
 ````
 
 ### Setting Timezone

@@ -60,4 +60,38 @@ describe('Add Business Days', () => {
     expect(newDate).toBeDefined();
     expect(newDate).toStrictEqual(expected);
   });
+
+  it('should add 1 business day with full weekdays preserving time', () => {
+    dayjs.setBusinessTime({
+      sunday: null,
+      monday: 'full',
+      tuesday: 'full',
+      wednesday: 'full',
+      thursday: 'full',
+      friday: 'full',
+      saturday: null,
+    });
+
+    const date = dayjs('2021-02-03 17:30:00');
+    const expected = dayjs('2021-02-04 17:30:00');
+
+    const newDate = date.addBusinessDays(1);
+
+    expect(newDate).toBeDefined();
+    expect(newDate).toStrictEqual(expected);
+  });
+
+  it('should throw when weekday range has same start and end', () => {
+    expect(() => {
+      dayjs.setBusinessTime({
+        sunday: null,
+        monday: [{ start: '00:00:00', end: '00:00:00' }],
+        tuesday: [{ start: '00:00:00', end: '00:00:00' }],
+        wednesday: [{ start: '00:00:00', end: '00:00:00' }],
+        thursday: [{ start: '00:00:00', end: '00:00:00' }],
+        friday: [{ start: '00:00:00', end: '00:00:00' }],
+        saturday: null,
+      });
+    }).toThrow(/Invalid time range/);
+  });
 });

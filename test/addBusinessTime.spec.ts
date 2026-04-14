@@ -102,4 +102,24 @@ describe('Add Business Time', () => {
     expect(newDate).toBeDefined();
     expect(newDate).toStrictEqual(expected);
   });
+
+  it('should add 1 business day with full weekdays preserving time', () => {
+    dayjs.setBusinessTime({
+      sunday: null,
+      monday: 'full',
+      tuesday: 'full',
+      wednesday: 'full',
+      thursday: 'full',
+      friday: 'full',
+      saturday: null,
+    });
+
+    const date = dayjs('2021-02-03 17:30:00');
+    const expected = dayjs('2021-02-04 17:30:00');
+
+    const newDate = date.addBusinessTime(1, 'day');
+
+    expect(newDate).toBeDefined();
+    expect(newDate).toStrictEqual(expected);
+  });
 });
