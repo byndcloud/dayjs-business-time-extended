@@ -708,7 +708,7 @@ const businessTime = (
 
     const isSameDayfromTo = from.isSame(to, 'day');
     if (isSameDayfromTo) {
-      const fromSegments = getBusinessTimeSegments(from);
+      const fromSegments = getBusinessTimeSegments(from) || [];
       for (const segment of fromSegments) {
         const { start, end } = segment;
 
@@ -731,7 +731,10 @@ const businessTime = (
       return diff ? diff * multiplier : 0;
     }
 
-    let segments = getBusinessTimeSegments(from);
+    // Guard: `from` can land on a non-business day when `lastBusinessTime()`
+    // returns the exclusive end boundary of the previous business day (the
+    // calendar day of that boundary is the non-business/holiday day itself).
+    let segments = getBusinessTimeSegments(from) || [];
     for (const segment of segments) {
       const { start, end } = segment;
 
@@ -744,7 +747,7 @@ const businessTime = (
 
     from = from.addBusinessDays(1);
     while (from.isBefore(to, 'day')) {
-      segments = getBusinessTimeSegments(from);
+      segments = getBusinessTimeSegments(from) || [];
       for (const segment of segments) {
         const { start, end } = segment;
         diff += end.diff(start, 'seconds');
@@ -753,7 +756,7 @@ const businessTime = (
       from = from.addBusinessDays(1);
     }
 
-    const toSegments = getBusinessTimeSegments(to);
+    const toSegments = getBusinessTimeSegments(to) || [];
     for (const segment of toSegments) {
       const { start, end } = segment;
       if (to.isSameOrAfter(start) && to.isSameOrBefore(end)) {
@@ -772,7 +775,7 @@ const businessTime = (
 
     const isSameDayfromTo = from.isSame(to, 'day');
     if (isSameDayfromTo) {
-      const fromSegments = getBusinessTimeSegments(from);
+      const fromSegments = getBusinessTimeSegments(from) || [];
       for (const segment of fromSegments) {
         const { start, end } = segment;
 
@@ -795,7 +798,10 @@ const businessTime = (
       return diff ? diff * multiplier : 0;
     }
 
-    let segments = getBusinessTimeSegments(from);
+    // Guard: `from` can land on a non-business day when `lastBusinessTime()`
+    // returns the exclusive end boundary of the previous business day (the
+    // calendar day of that boundary is the non-business/holiday day itself).
+    let segments = getBusinessTimeSegments(from) || [];
     for (const segment of segments) {
       const { start, end } = segment;
 
@@ -808,7 +814,7 @@ const businessTime = (
 
     from = from.addBusinessDays(1);
     while (from.isBefore(to, 'day')) {
-      segments = getBusinessTimeSegments(from);
+      segments = getBusinessTimeSegments(from) || [];
       for (const segment of segments) {
         const { start, end } = segment;
         diff += end.diff(start, 'minutes');
@@ -817,7 +823,7 @@ const businessTime = (
       from = from.addBusinessDays(1);
     }
 
-    const toSegments = getBusinessTimeSegments(to);
+    const toSegments = getBusinessTimeSegments(to) || [];
     for (const segment of toSegments) {
       const { start, end } = segment;
       if (to.isSameOrAfter(start) && to.isSameOrBefore(end)) {
