@@ -533,49 +533,11 @@ const businessTime = (
     numberOfMinutes: number,
     action: 'add' | 'subtract' = 'add',
   ): Dayjs {
-    let date =
-      action === 'add' ? day.nextBusinessTime() : day.lastBusinessTime();
-
-    while (numberOfMinutes) {
-      const segment = getCurrentBusinessTimeSegment(
-        date,
-      ) as BusinessTimeSegment;
-
-      if (!segment) {
-        date =
-          action === 'add' ? date.nextBusinessTime() : date.lastBusinessTime();
-        continue;
-      }
-
-      const { start, end } = segment;
-
-      const compareBaseDate = action === 'add' ? end : date;
-      const compareDate = action === 'add' ? date : start;
-
-      let timeToJump = compareBaseDate.diff(compareDate, 'minute');
-
-      if (timeToJump > numberOfMinutes) {
-        timeToJump = numberOfMinutes;
-      }
-
-      if (!timeToJump && numberOfMinutes) {
-        timeToJump = 1;
-        const jumpedDate = date[action](timeToJump, 'minute');
-
-        if (jumpedDate.isBusinessTime()) {
-          numberOfMinutes -= timeToJump;
-        }
-
-        date = jumpedDate;
-        continue;
-      }
-
-      numberOfMinutes -= timeToJump;
-
-      date = date[action](timeToJump, 'minute');
-    }
-
-    return date;
+    return addOrSubtractBusinessMilliseconds(
+      day,
+      numberOfMinutes * 60 * 1000,
+      action,
+    );
   }
 
   function addOrSubtractBusinessSeconds(
@@ -583,17 +545,61 @@ const businessTime = (
     numberOfSeconds: number,
     action: 'add' | 'subtract' = 'add',
   ): Dayjs {
+    return addOrSubtractBusinessMilliseconds(
+      day,
+      numberOfSeconds * 1000,
+      action,
+    );
+  }
+
+  /**
+   * Core business-time traversal that operates at millisecond precision
+   * to preserve sub-minute/sub-second components of the input date when
+   * crossing business-time segment boundaries (e.g., end-of-day into a
+   * holiday). Minute/second variants delegate here after converting
+   * their unit to milliseconds.
+   */
+  function addOrSubtractBusinessMilliseconds(
+    day: Dayjs,
+    numberOfMilliseconds: number,
+    action: 'add' | 'subtract' = 'add',
+  ): Dayjs {
+    let remainingMs = numberOfMilliseconds;
     let date =
       action === 'add' ? day.nextBusinessTime() : day.lastBusinessTime();
 
-    while (numberOfSeconds) {
+    while (remainingMs > 0) {
       const segment = getCurrentBusinessTimeSegment(
         date,
       ) as BusinessTimeSegment;
 
       if (!segment) {
-        date =
+        const jumpTarget =
           action === 'add' ? date.nextBusinessTime() : date.lastBusinessTime();
+
+        if (!jumpTarget.isSame(date)) {
+          date = jumpTarget;
+          continue;
+        }
+
+        // Stuck: nextBusinessTime/lastBusinessTime returned the same
+        // boundary we're sitting on (typical when `date` is at the
+        // exclusive end of a business day that abuts a non-business
+        // day — e.g. 00:00 of a holiday that immediately follows a
+        // 'full' weekday). Consume from the adjacent business day's
+        // outermost segment anchored at the shared boundary.
+        const adjacent = getAdjacentBusinessSegment(date, action);
+        if (!adjacent) {
+          break;
+        }
+
+        const msAvailable = adjacent.end.diff(adjacent.start, 'millisecond');
+        const msToConsume = Math.min(msAvailable, remainingMs);
+        date =
+          action === 'add'
+            ? adjacent.start.add(msToConsume, 'millisecond')
+            : adjacent.end.subtract(msToConsume, 'millisecond');
+        remainingMs -= msToConsume;
         continue;
       }
 
@@ -602,30 +608,69 @@ const businessTime = (
       const compareBaseDate = action === 'add' ? end : date;
       const compareDate = action === 'add' ? date : start;
 
-      let timeToJump = compareBaseDate.diff(compareDate, 'second');
+      let msToJump = compareBaseDate.diff(compareDate, 'millisecond');
 
-      if (timeToJump > numberOfSeconds) {
-        timeToJump = numberOfSeconds;
+      if (msToJump > remainingMs) {
+        msToJump = remainingMs;
       }
 
-      if (!timeToJump && numberOfSeconds) {
-        timeToJump = 1;
-        const jumpedDate = date[action](timeToJump, 'second');
+      if (msToJump <= 0) {
+        // Date sits exactly on the current segment's boundary (end for
+        // add, start for subtract). Probe 1 ms into the action
+        // direction to locate the adjacent segment. If found (abutting
+        // segments across day boundaries), consume directly from that
+        // segment to avoid losing the 1 ms probe offset. Otherwise,
+        // defer to nextBusinessTime/lastBusinessTime to skip gaps.
+        const probe = date[action](1, 'millisecond');
+        const probeSegment = getCurrentBusinessTimeSegment(
+          probe,
+        ) as BusinessTimeSegment;
 
-        if (jumpedDate.isBusinessTime()) {
-          numberOfSeconds -= timeToJump;
+        if (!probeSegment) {
+          date =
+            action === 'add'
+              ? probe.nextBusinessTime()
+              : probe.lastBusinessTime();
+          continue;
         }
 
-        date = jumpedDate;
+        const probeSegEnd = probeSegment.end;
+        const probeSegStart = probeSegment.start;
+        const msAvailable = probeSegEnd.diff(probeSegStart, 'millisecond');
+        const msToConsume = Math.min(msAvailable, remainingMs);
+
+        date =
+          action === 'add'
+            ? probeSegStart.add(msToConsume, 'millisecond')
+            : probeSegEnd.subtract(msToConsume, 'millisecond');
+        remainingMs -= msToConsume;
         continue;
       }
 
-      numberOfSeconds -= timeToJump;
-
-      date = date[action](timeToJump, 'second');
+      remainingMs -= msToJump;
+      date = date[action](msToJump, 'millisecond');
     }
 
     return date;
+  }
+
+  /**
+   * Returns the outermost business segment of the adjacent business
+   * day in the given action direction. Used to resolve the ambiguous
+   * boundary instant that belongs to both the exclusive end of one
+   * day's segment and the non-business period that follows/precedes.
+   */
+  function getAdjacentBusinessSegment(
+    date: Dayjs,
+    action: 'add' | 'subtract',
+  ): BusinessTimeSegment | null {
+    const adjacentDay =
+      action === 'add' ? date.nextBusinessDay() : date.lastBusinessDay();
+    const segments = getBusinessTimeSegments(adjacentDay) || [];
+    if (!segments.length) {
+      return null;
+    }
+    return action === 'add' ? segments[0] : segments[segments.length - 1];
   }
 
   function subtractBusinessMinutes(minutesToSubtract: number): Dayjs {
